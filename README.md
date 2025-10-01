@@ -53,7 +53,7 @@ pip install -r requirements.txt
 Run this script once to process your PDF and store embeddings in Qdrant:
 
 ```bash
-python generate_embeddings.py
+python ingest.py
 ```
 
 This script will:
