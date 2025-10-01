@@ -69,7 +69,8 @@ This script will:
 Run the agent backend:
 
 ```bash
-uvicorn app:app --host 127.0.0.1 --port 8001 --reload
+fastapi dev app.py --host 127.0.0.1 --port 8001
+
 ```
 
 The server will start at:

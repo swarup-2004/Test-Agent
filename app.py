@@ -78,6 +78,9 @@ async def ask(request: AskRequest):
     # Call Ollama LLaMA
     answer = llm.invoke(prompt)
 
+    print(f"[INFO] Question: {query}")
+    print(f"[INFO] Answer: {answer}")
+
     return AskResponse(
         question=query,
         answer=answer,
