@@ -69,7 +69,7 @@ This script will:
 Run the agent backend:
 
 ```bash
-python app.py
+uvicorn app:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 The server will start at:
@@ -105,7 +105,7 @@ curl -X POST http://127.0.0.1:5000/ask \
 
 ```
 Test-Agent/
-│── app.py                  # Flask API server
+│── app.py                  # FastAPI server
 │── generate_embeddings.py  # Script to process PDF and store embeddings
 │── requirements.txt        # Python dependencies
 │── data/                   # Folder containing the PDF knowledge base
@@ -115,6 +115,6 @@ Test-Agent/
 
 ---
 
-⚡ You now have a working **local RAG Agent** with Flask + Qdrant + Ollama!
+⚡ You now have a working **local RAG Agent** with FastAPI + Qdrant + Ollama!
 
 ---

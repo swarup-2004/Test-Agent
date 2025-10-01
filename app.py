@@ -1,17 +1,25 @@
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
 from langchain_community.vectorstores import Qdrant
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_ollama import OllamaLLM
 from qdrant_client import QdrantClient
 
+# -------------------------------
 # Config
+# -------------------------------
 COLLECTION_NAME = "knowledge_base"
 QDRANT_URL = "http://localhost:6333"
 
+# -------------------------------
 # 1. Load embeddings (same model used in ingestion)
+# -------------------------------
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
+# -------------------------------
 # 2. Connect to existing Qdrant collection
+# -------------------------------
 client = QdrantClient(url=QDRANT_URL)
 vectorstore = Qdrant(
     client=client,
@@ -20,21 +28,37 @@ vectorstore = Qdrant(
 )
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
+# -------------------------------
 # 3. Load Ollama LLaMA 3.2
+# -------------------------------
 llm = OllamaLLM(model="llama3.2")
 
-# 4. Setup Flask app
-app = Flask(__name__)
+# -------------------------------
+# 4. FastAPI app setup
+# -------------------------------
+app = FastAPI(title="RAG Agent API")
 
-@app.route("/ask", methods=["POST"])
-def ask():
-    data = request.get_json()
-    if not data or "question" not in data:
-        return jsonify({"error": "Missing 'question' field"}), 400
+# -------------------------------
+# 5. Request & Response Models
+# -------------------------------
+class AskRequest(BaseModel):
+    question: str
 
-    query = data["question"]
+class AskResponse(BaseModel):
+    question: str
+    answer: str
+    context_used: List[str]
 
-    # Retrieve relevant docs
+# -------------------------------
+# 6. Endpoint
+# -------------------------------
+@app.post("/ask", response_model=AskResponse)
+async def ask(request: AskRequest):
+    query = request.question
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
+
+    # Retrieve relevant documents
     docs = retriever.get_relevant_documents(query)
     context = "\n\n".join([doc.page_content for doc in docs])
 
@@ -51,13 +75,16 @@ def ask():
     Answer:
     """
 
+    # Call Ollama LLaMA
     answer = llm.invoke(prompt)
 
-    return jsonify({
-        "question": query,
-        "answer": answer,
-        "context_used": [doc.page_content for doc in docs]
-    })
+    return AskResponse(
+        question=query,
+        answer=answer,
+        context_used=[doc.page_content for doc in docs]
+    )
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+# -------------------------------
+# 7. Run the server
+# -------------------------------
+# Run with: uvicorn app:app --host 127.0.0.1 --port 8000 --reload
