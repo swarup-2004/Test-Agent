@@ -3,8 +3,10 @@ from pydantic import BaseModel
 from typing import List
 from langchain_community.vectorstores import Qdrant
 from langchain.embeddings import HuggingFaceEmbeddings
-from langchain_ollama import OllamaLLM
 from qdrant_client import QdrantClient
+from langchain_groq import ChatGroq
+from dotenv import load_dotenv
+import os
 
 # -------------------------------
 # Config
@@ -31,7 +33,17 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 # -------------------------------
 # 3. Load Ollama LLaMA 3.2
 # -------------------------------
-llm = OllamaLLM(model="llama3.2")
+# Load environment variables
+load_dotenv()
+
+# Access the Groq API key
+groq_api_key = os.getenv("GROQ_API_KEY")
+
+# Initialize the LLM (same model name as Ollama)
+llm = ChatGroq(
+    api_key=groq_api_key,
+    model_name="llama-3.1-8b-instant"  # or "llama3.2" if supported
+)
 
 # -------------------------------
 # 4. FastAPI app setup
@@ -83,7 +95,7 @@ async def ask(request: AskRequest):
 
     return AskResponse(
         question=query,
-        answer=answer,
+        answer=answer.content if hasattr(answer, "content") else str(answer),
         context_used=[doc.page_content for doc in docs]
     )
 
